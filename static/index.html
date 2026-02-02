@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage vs Revenue Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .date-selector {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .date-selector input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .date-selector button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .date-selector button:hover {
+            background: #5568d3;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .card .positive {
+            color: #10b981;
+        }
+
+        .card .negative {
+            color: #ef4444;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        canvas {
+            max-height: 400px;
+        }
+
+        .table-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #667eea;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .outlier-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .outlier-high {
+            background: #10b981;
+            color: white;
+        }
+
+        .outlier-low {
+            background: #ef4444;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .error {
+            background: #ef4444;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Usage vs Revenue Analyzer</h1>
+            <p class="subtitle">Correlating API usage with revenue to understand feature profitability</p>
+            
+            <div class="date-selector">
+                <label>Start Date:</label>
+                <input type="date" id="startDate">
+                <label>End Date:</label>
+                <input type="date" id="endDate">
+                <button onclick="loadData()">Update</button>
+            </div>
+        </header>
+
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="loading" class="loading">Loading data...</div>
+
+        <div id="dashboard" style="display: none;">
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Total Revenue</h3>
+                    <div class="value positive" id="totalRevenue">$0</div>
+                </div>
+                <div class="card">
+                    <h3>Total Cost</h3>
+                    <div class="value negative" id="totalCost">$0</div>
+                </div>
+                <div class="card">
+                    <h3>Net Profit</h3>
+                    <div class="value" id="netProfit">$0</div>
+                </div>
+                <div class="card">
+                    <h3>Profit Margin</h3>
+                    <div class="value" id="profitMargin">0%</div>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h2>📈 Net Profit Over Time</h2>
+                    <canvas id="profitChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h2>💰 Cost vs Revenue Over Time</h2>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h2>🎯 Feature Profitability</h2>
+                    <canvas id="featureChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <h2>Feature Breakdown</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Total Cost</th>
+                            <th>Total Revenue</th>
+                            <th>Net Profit</th>
+                            <th>Usage Count</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="featureTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let profitChart, revenueChart, featureChart;
+
+        // Initialize dates to last 30 days
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        document.getElementById('endDate').valueAsDate = today;
+        document.getElementById('startDate').valueAsDate = thirtyDaysAgo;
+
+        async function loadData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+
+            try {
+                const response = await fetch(`/api/dashboard?start_date=${startDate}&end_date=${endDate}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const data = await response.json();
+                updateDashboard(data);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('errorMessage').textContent = 'Error loading data: ' + error.message;
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        function updateDashboard(data) {
+            // Update summary cards
+            document.getElementById('totalRevenue').textContent = '$' + data.summary.total_revenue.toLocaleString();
+            document.getElementById('totalCost').textContent = '$' + data.summary.total_cost.toLocaleString();
+            
+            const netProfit = data.summary.total_profit;
+            const netProfitEl = document.getElementById('netProfit');
+            netProfitEl.textContent = '$' + netProfit.toLocaleString();
+            netProfitEl.className = 'value ' + (netProfit >= 0 ? 'positive' : 'negative');
+
+            const profitMargin = data.summary.profit_margin;
+            const profitMarginEl = document.getElementById('profitMargin');
+            profitMarginEl.textContent = profitMargin.toFixed(2) + '%';
+            profitMarginEl.className = 'value ' + (profitMargin >= 0 ? 'positive' : 'negative');
+
+            // Update charts
+            updateProfitChart(data.time_series);
+            updateRevenueChart(data.time_series);
+            updateFeatureChart(data.feature_metrics);
+
+            // Update table
+            updateFeatureTable(data.feature_metrics, data.summary.outliers);
+        }
+
+        function updateProfitChart(timeSeries) {
+            const ctx = document.getElementById('profitChart').getContext('2d');
+            
+            if (profitChart) {
+                profitChart.destroy();
+            }
+
+            profitChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeSeries.map(d => d.date),
+                    datasets: [{
+                        label: 'Net Profit',
+                        data: timeSeries.map(d => d.net_profit),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRevenueChart(timeSeries) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeSeries.map(d => d.date),
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: timeSeries.map(d => d.total_revenue),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Cost',
+                            data: timeSeries.map(d => d.total_cost),
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateFeatureChart(features) {
+            const ctx = document.getElementById('featureChart').getContext('2d');
+            
+            if (featureChart) {
+                featureChart.destroy();
+            }
+
+            featureChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: features.map(f => f.feature),
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: features.map(f => f.total_revenue),
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        },
+                        {
+                            label: 'Cost',
+                            data: features.map(f => f.total_cost),
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateFeatureTable(features, outliers) {
+            const tbody = document.getElementById('featureTable');
+            tbody.innerHTML = '';
+
+            const outlierMap = {};
+            outliers.forEach(o => {
+                outlierMap[o.feature] = o.type;
+            });
+
+            features.forEach(feature => {
+                const row = document.createElement('tr');
+                
+                let statusBadge = '';
+                if (outlierMap[feature.feature]) {
+                    const type = outlierMap[feature.feature];
+                    const badgeClass = type === 'high_profit' ? 'outlier-high' : 'outlier-low';
+                    const badgeText = type === 'high_profit' ? '⭐ High Profit' : '⚠️ High Loss';
+                    statusBadge = `<span class="outlier-badge ${badgeClass}">${badgeText}</span>`;
+                }
+
+                row.innerHTML = `
+                    <td><strong>${feature.feature}</strong></td>
+                    <td>$${feature.total_cost.toLocaleString()}</td>
+                    <td>$${feature.total_revenue.toLocaleString()}</td>
+                    <td style="color: ${feature.net_profit >= 0 ? '#10b981' : '#ef4444'}">
+                        <strong>$${feature.net_profit.toLocaleString()}</strong>
+                    </td>
+                    <td>${feature.usage_count}</td>
+                    <td>${statusBadge}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+</html>
