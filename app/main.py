@@ -62,12 +62,12 @@ async def get_dashboard_data(
     start_date: str = Query(
         None,
         description="Start date in YYYY-MM-DD format",
-        example="2024-01-01"
+        examples=["2024-01-01"]
     ),
     end_date: str = Query(
         None,
         description="End date in YYYY-MM-DD format",
-        example="2024-01-31"
+        examples=["2024-01-31"]
     )
 ):
     """
