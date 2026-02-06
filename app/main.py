@@ -48,7 +48,9 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "http://localhost:3002",
-        "http://127.0.0.1:3002"
+        "http://127.0.0.1:3002",
+        "https://usage-vs-revenue-analyzer-vv6m-mftrz6xcs-cloverzer0s-projects.vercel.app",
+        "https://usage-vs-revenue-analyzer-vv6m.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
