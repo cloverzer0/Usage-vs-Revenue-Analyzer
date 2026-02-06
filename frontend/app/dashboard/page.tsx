@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DashboardData, HealthCheck } from '@/lib/types';
+import { DashboardData } from '@/lib/types';
 import { fetchDashboardData, fetchHealthCheck } from '@/lib/api';
 import { Navigation } from '@/components/navigation';
 import { KPICards } from '@/components/kpi-cards';
