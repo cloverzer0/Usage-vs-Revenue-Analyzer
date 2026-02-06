@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DashboardData } from '@/lib/types';
-import { fetchDashboardData, fetchHealthCheck } from '@/lib/api';
+import { fetchDashboardData } from '@/lib/api';
 import { Navigation } from '@/components/navigation';
 import { KPICards } from '@/components/kpi-cards';
 import { DualAxisChart } from '@/components/dual-axis-chart';
@@ -196,19 +196,9 @@ export default function DashboardPage() {
     return insights;
   };
 
-  const checkHealth = async () => {
-    try {
-      const health = await fetchHealthCheck();
-      setHealthCheck(health);
-    } catch (err) {
-      console.error('Health check failed:', err);
-    }
-  };
-
   useEffect(() => {
     // Only load data after auth is verified
     if (!authLoading && user) {
-      checkHealth();
       loadData();
     }
   }, [authLoading, user]);
