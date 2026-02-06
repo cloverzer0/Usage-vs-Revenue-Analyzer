@@ -9,7 +9,6 @@ import { DualAxisChart } from '@/components/dual-axis-chart';
 import { BreakdownTabs } from '@/components/breakdown-tabs';
 import { DrilldownPanel } from '@/components/drilldown-panel';
 import { InsightsSection } from '@/components/insights-section';
-import { SettingsDialog } from '@/components/settings-dialog';
 import { DynamicSettingsDialog } from '@/components/dynamic-settings-dialog';
 import { AirbyteConnections } from '@/components/airbyte-connections';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -33,7 +32,6 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [healthCheck, setHealthCheck] = useState<HealthCheck | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -50,7 +48,7 @@ export default function DashboardPage() {
       const customersResponse = await fetch('/api/customers');
       if (customersResponse.ok) {
         const customersData = await customersResponse.json();
-        const transformedCustomers = customersData.customers.map((c: any) => ({
+        const transformedCustomers = customersData.customers.map((c: { id: string; name: string; usage: number; revenue: number; revenue_per_unit: number; plan?: string }) => ({
           id: c.id,
           name: c.name,
           usage: c.usage,
